@@ -80,10 +80,3 @@ A larger version would add mode-specific baselines, time-window features, calibr
 - The detector treats rows independently.
 - The report is small and text-based by design.
 
-## Safety Notes
-
-- no real mission data
-- no employer data
-- no internal schema names
-- no credentials or API keys
-- no private work code
