@@ -1,0 +1,16 @@
+[project]
+name = "telemetry-anomaly-detection-demo"
+version = "0.1.0"
+description = "Synthetic telemetry anomaly detection demo"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+telemetry-anomaly = "telemetry_anomaly_detection.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
