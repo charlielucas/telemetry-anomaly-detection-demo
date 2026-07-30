@@ -14,12 +14,17 @@ class CliTests(unittest.TestCase):
             report_path = tmp_path / "report.md"
 
             generate(output_path=data_path, count=24)
-            score(input_path=data_path, output_path=scored_path)
+            scored = score(
+                input_path=data_path,
+                output_path=scored_path,
+                baseline_scope="mode",
+            )
             output = report(scored_path=scored_path, output_path=report_path)
 
             self.assertTrue(data_path.exists())
             self.assertTrue(scored_path.exists())
             self.assertTrue(report_path.exists())
+            self.assertEqual(len(scored), 24)
             self.assertIn("Injected events flagged", output)
 
 

@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: test demo generate score report
+.PHONY: test demo generate score report app
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests
@@ -15,3 +15,6 @@ report:
 	PYTHONPATH=src $(PYTHON) -m telemetry_anomaly_detection report
 
 demo: generate score report
+
+app:
+	streamlit run app.py

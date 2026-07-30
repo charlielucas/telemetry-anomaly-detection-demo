@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .detector import score_rows
+from .detector import DEFAULT_REVIEW_THRESHOLD, score_rows
 from .io import read_csv, write_csv
 from .simulate import SIGNALS, generate_rows
 
@@ -16,7 +16,11 @@ SCORED_PATH = ROOT / "examples" / "scored_telemetry.csv"
 REPORT_PATH = ROOT / "examples" / "anomaly_report.md"
 
 
-def generate(output_path: Path = DATA_PATH, count: int = 96, seed: int = 42) -> list[dict[str, object]]:
+def generate(
+    output_path: Path = DATA_PATH,
+    count: int = 96,
+    seed: int = 42,
+) -> list[dict[str, object]]:
     rows = generate_rows(count=count, seed=seed)
     fieldnames = [
         "timestamp",
@@ -30,15 +34,24 @@ def generate(output_path: Path = DATA_PATH, count: int = 96, seed: int = 42) -> 
     return rows
 
 
-def score(input_path: Path = DATA_PATH, output_path: Path = SCORED_PATH) -> list[dict[str, object]]:
+def score(
+    input_path: Path = DATA_PATH,
+    output_path: Path = SCORED_PATH,
+    threshold: float = DEFAULT_REVIEW_THRESHOLD,
+    baseline_scope: str = "combined",
+) -> list[dict[str, object]]:
     rows = read_csv(input_path)
-    scored = score_rows(rows)
+    scored = score_rows(rows, threshold=threshold, baseline_scope=baseline_scope)
     fieldnames = list(scored[0].keys()) if scored else []
     write_csv(output_path, scored, fieldnames)
     return scored
 
 
-def report(scored_path: Path = SCORED_PATH, output_path: Path = REPORT_PATH, top_n: int = 8) -> str:
+def report(
+    scored_path: Path = SCORED_PATH,
+    output_path: Path = REPORT_PATH,
+    top_n: int = 8,
+) -> str:
     rows = read_csv(scored_path)
     ranked = sorted(rows, key=lambda row: float(row["anomaly_score"]), reverse=True)
     review_rows = [row for row in rows if row["needs_review"] == "True"]
@@ -90,16 +103,33 @@ def main() -> None:
     parser.add_argument("--count", type=int, default=96)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--top-n", type=int, default=8)
+    parser.add_argument("--threshold", type=float, default=DEFAULT_REVIEW_THRESHOLD)
+    parser.add_argument(
+        "--baseline-scope",
+        choices=["combined", "mode"],
+        default="combined",
+    )
     args = parser.parse_args()
 
     if args.command == "generate":
         rows = generate(output_path=args.data_path, count=args.count, seed=args.seed)
         print(f"Wrote {len(rows)} telemetry rows to {args.data_path}")
     elif args.command == "score":
-        rows = score(input_path=args.data_path, output_path=args.scored_path)
+        rows = score(
+            input_path=args.data_path,
+            output_path=args.scored_path,
+            threshold=args.threshold,
+            baseline_scope=args.baseline_scope,
+        )
         print(f"Wrote {len(rows)} scored rows to {args.scored_path}")
     elif args.command == "report":
-        print(report(scored_path=args.scored_path, output_path=args.report_path, top_n=args.top_n))
+        print(
+            report(
+                scored_path=args.scored_path,
+                output_path=args.report_path,
+                top_n=args.top_n,
+            )
+        )
 
 
 if __name__ == "__main__":
