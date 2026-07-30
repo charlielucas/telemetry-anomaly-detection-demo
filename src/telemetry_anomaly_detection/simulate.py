@@ -6,7 +6,6 @@ import math
 import random
 from datetime import datetime, timedelta, timezone
 
-
 SIGNALS = [
     "bus_voltage",
     "battery_temp_c",
@@ -17,6 +16,9 @@ SIGNALS = [
 
 
 def generate_rows(count: int = 96, seed: int = 42) -> list[dict[str, object]]:
+    if count <= 0:
+        raise ValueError("row count must be positive")
+
     rng = random.Random(seed)
     start = datetime(2026, 1, 1, tzinfo=timezone.utc)
     anomaly_points = {19, 47, 73, 88}
@@ -27,7 +29,9 @@ def generate_rows(count: int = 96, seed: int = 42) -> list[dict[str, object]]:
         mode = "sunlit" if index % 24 < 15 else "eclipse"
 
         bus_voltage = 28.1 + 0.18 * math.sin(orbit_phase) + rng.uniform(-0.04, 0.04)
-        battery_temp = 18.0 + 4.2 * math.sin(orbit_phase - 0.8) + rng.uniform(-0.35, 0.35)
+        battery_temp = (
+            18.0 + 4.2 * math.sin(orbit_phase - 0.8) + rng.uniform(-0.35, 0.35)
+        )
         gyro_rate = 0.08 + rng.uniform(-0.025, 0.025)
         wheel_rpm = 3200 + 95 * math.sin(orbit_phase + 0.4) + rng.uniform(-22, 22)
         snr = 13.8 + 1.4 * math.cos(orbit_phase) + rng.uniform(-0.25, 0.25)
