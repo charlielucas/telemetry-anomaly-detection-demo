@@ -147,20 +147,28 @@ m5.metric(
     percent(float(summary["recall"]), int(summary["event_count"])),
 )
 
-if summary["false_negative"]:
-    missed_count = int(summary["false_negative"])
-    st.warning(
+missed_count = int(summary["false_negative"])
+extra_count = int(summary["false_positive"])
+if missed_count:
+    message = (
         f"{missed_count} injected {'event is' if missed_count == 1 else 'events are'} "
         "outside the review queue at the current threshold."
     )
-elif summary["false_positive"]:
-    extra_count = int(summary["false_positive"])
+    if extra_count:
+        message += (
+            f" The queue also includes {extra_count} unlabeled "
+            f"{'row' if extra_count == 1 else 'rows'} that would need review."
+        )
+    st.warning(message)
+elif extra_count:
     st.info(
         f"All injected events are in the queue, along with {extra_count} unlabeled "
         f"{'row' if extra_count == 1 else 'rows'} that would also need review."
     )
 else:
-    st.success("All injected events are in the queue with no extra rows at this setting.")
+    st.success(
+        "All injected events are in the queue with no extra rows at this setting."
+    )
 
 st.header("Baseline comparison")
 st.write(
@@ -228,7 +236,12 @@ st.vega_lite_chart(
             },
             {
                 "transform": [{"filter": "datum.needs_review == true"}],
-                "mark": {"type": "point", "filled": True, "size": 80, "color": "#E45756"},
+                "mark": {
+                    "type": "point",
+                    "filled": True,
+                    "size": 80,
+                    "color": "#E45756",
+                },
                 "encoding": {
                     "x": {"field": "timestamp", "type": "temporal"},
                     "y": {"field": "value", "type": "quantitative"},
@@ -289,7 +302,9 @@ selected_timestamp = st.selectbox(
         timestamp,
     ),
 )
-selected_row = next(row for row in review_candidates if row["timestamp"] == selected_timestamp)
+selected_row = next(
+    row for row in review_candidates if row["timestamp"] == selected_timestamp
+)
 baselines = fit_baselines(rows, baseline_scope=baseline_scope)
 selected_baseline = baseline_for_row(selected_row, baselines, baseline_scope)
 selected_scores = signal_scores(selected_row, selected_baseline)

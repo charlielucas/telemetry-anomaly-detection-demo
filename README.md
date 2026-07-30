@@ -20,8 +20,8 @@ The example focuses on a few signals that are easy to reason about:
 - downlink signal-to-noise ratio
 
 The detector uses robust z-scores based on median and median absolute deviation.
-The app shows the observed value, baseline, score, and review decision for each
-signal so the result stays inspectable.
+For each selected row, the app shows every signal's observed value, baseline,
+and score so the review decision stays inspectable.
 
 The review controls make two policy choices visible:
 
@@ -81,6 +81,7 @@ telemetry-anomaly-detection-demo/
     test_detector.py
     test_simulate.py
   Makefile
+  pyproject.toml
   requirements.txt
 ```
 
@@ -107,9 +108,16 @@ make test
 make demo
 ```
 
+For the full test, lint, and formatting checks:
+
+```bash
+python -m pip install -e ".[dev]"
+make check
+```
+
 ## Outputs
 
-The commands write:
+By default, the commands write these paths under the current working directory:
 
 - `data/telemetry.csv`
 - `examples/scored_telemetry.csv`

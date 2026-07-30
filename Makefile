@@ -1,6 +1,13 @@
 PYTHON ?= python3
+RUFF ?= ruff
 
-.PHONY: test demo generate score report app
+.PHONY: check lint test demo generate score report app
+
+check: lint test
+
+lint:
+	$(RUFF) check .
+	$(RUFF) format --check .
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests

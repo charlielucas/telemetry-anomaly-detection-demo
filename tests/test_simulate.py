@@ -17,6 +17,12 @@ class SimulateTests(unittest.TestCase):
 
         self.assertEqual(len(events), 4)
 
+    def test_generation_requires_positive_count(self):
+        for count in (0, -1):
+            with self.subTest(count=count):
+                with self.assertRaisesRegex(ValueError, "row count must be positive"):
+                    generate_rows(count=count)
+
 
 if __name__ == "__main__":
     unittest.main()

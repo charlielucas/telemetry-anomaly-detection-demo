@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +27,25 @@ class CliTests(unittest.TestCase):
             self.assertTrue(report_path.exists())
             self.assertEqual(len(scored), 24)
             self.assertIn("Injected events flagged", output)
+
+    def test_default_outputs_follow_current_working_directory(self):
+        original_directory = Path.cwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                os.chdir(tmpdir)
+                generate(count=24)
+                score()
+                report()
+
+                self.assertTrue(Path("data/telemetry.csv").exists())
+                self.assertTrue(Path("examples/scored_telemetry.csv").exists())
+                self.assertTrue(Path("examples/anomaly_report.md").exists())
+            finally:
+                os.chdir(original_directory)
+
+    def test_report_rejects_negative_row_limit(self):
+        with self.assertRaisesRegex(ValueError, "top_n must not be negative"):
+            report(top_n=-1)
 
 
 if __name__ == "__main__":

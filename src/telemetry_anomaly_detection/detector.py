@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from statistics import median
 
@@ -9,7 +10,7 @@ from .simulate import SIGNALS
 
 DEFAULT_REVIEW_THRESHOLD = 3.5
 ROBUST_Z_SCALE = 0.6744897501960817
-BASELINE_SCOPES = {"combined", "mode"}
+BASELINE_SCOPES = frozenset({"combined", "mode"})
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,23 @@ class Baseline:
 def median_absolute_deviation(values: list[float]) -> float:
     center = median(values)
     deviations = [abs(value - center) for value in values]
-    return median(deviations) or 1.0
+    return float(median(deviations))
+
+
+def signal_value(row: dict[str, object], signal: str) -> float:
+    """Read one finite numeric signal value with a clear validation error."""
+    try:
+        value = float(row[signal])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"{signal} must be a finite number") from exc
+    if not math.isfinite(value):
+        raise ValueError(f"{signal} must be a finite number")
+    return value
+
+
+def validate_review_threshold(threshold: float) -> None:
+    if not math.isfinite(threshold) or threshold <= 0:
+        raise ValueError("review threshold must be a finite positive number")
 
 
 def fit_baseline(rows: list[dict[str, object]]) -> Baseline:
@@ -32,7 +49,7 @@ def fit_baseline(rows: list[dict[str, object]]) -> Baseline:
     scales: dict[str, float] = {}
 
     for signal in SIGNALS:
-        values = [float(row[signal]) for row in rows]
+        values = [signal_value(row, signal) for row in rows]
         medians[signal] = median(values)
         scales[signal] = median_absolute_deviation(values)
 
@@ -71,12 +88,13 @@ def signal_scores(row: dict[str, object], baseline: Baseline) -> dict[str, float
     scores: dict[str, float] = {}
 
     for signal in SIGNALS:
-        value = float(row[signal])
-        scaled = (
-            ROBUST_Z_SCALE
-            * abs(value - baseline.medians[signal])
-            / baseline.scales[signal]
-        )
+        value = signal_value(row, signal)
+        deviation = abs(value - baseline.medians[signal])
+        scale = baseline.scales[signal]
+        if scale == 0:
+            scaled = 0.0 if deviation == 0 else math.inf
+        else:
+            scaled = ROBUST_Z_SCALE * deviation / scale
         scores[signal] = scaled
 
     return scores
@@ -87,6 +105,7 @@ def score_row(
     baseline: Baseline,
     threshold: float = DEFAULT_REVIEW_THRESHOLD,
 ) -> dict[str, object]:
+    validate_review_threshold(threshold)
     scores = signal_scores(row, baseline)
     top_signal = max(scores, key=scores.get)
     anomaly_score = scores[top_signal]
@@ -104,8 +123,7 @@ def score_rows(
     threshold: float = DEFAULT_REVIEW_THRESHOLD,
     baseline_scope: str = "combined",
 ) -> list[dict[str, object]]:
-    if threshold <= 0:
-        raise ValueError("review threshold must be positive")
+    validate_review_threshold(threshold)
     baselines = fit_baselines(rows, baseline_scope=baseline_scope)
     return [
         score_row(

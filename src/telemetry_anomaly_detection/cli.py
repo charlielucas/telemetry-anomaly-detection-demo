@@ -3,17 +3,37 @@
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 
 from .detector import DEFAULT_REVIEW_THRESHOLD, score_rows
 from .io import read_csv, write_csv
 from .simulate import SIGNALS, generate_rows
 
+DATA_PATH = Path("data") / "telemetry.csv"
+SCORED_PATH = Path("examples") / "scored_telemetry.csv"
+REPORT_PATH = Path("examples") / "anomaly_report.md"
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = ROOT / "data" / "telemetry.csv"
-SCORED_PATH = ROOT / "examples" / "scored_telemetry.csv"
-REPORT_PATH = ROOT / "examples" / "anomaly_report.md"
+
+def positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("value must be positive")
+    return parsed
+
+
+def nonnegative_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("value must not be negative")
+    return parsed
+
+
+def positive_finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise argparse.ArgumentTypeError("value must be a finite positive number")
+    return parsed
 
 
 def generate(
@@ -52,11 +72,16 @@ def report(
     output_path: Path = REPORT_PATH,
     top_n: int = 8,
 ) -> str:
+    if top_n < 0:
+        raise ValueError("top_n must not be negative")
+
     rows = read_csv(scored_path)
     ranked = sorted(rows, key=lambda row: float(row["anomaly_score"]), reverse=True)
     review_rows = [row for row in rows if row["needs_review"] == "True"]
     injected_rows = [row for row in rows if row["is_injected_anomaly"] == "True"]
-    flagged_injected_rows = [row for row in injected_rows if row["needs_review"] == "True"]
+    flagged_injected_rows = [
+        row for row in injected_rows if row["needs_review"] == "True"
+    ]
 
     lines = [
         "# Anomaly Report",
@@ -100,10 +125,14 @@ def main() -> None:
     parser.add_argument("--data-path", type=Path, default=DATA_PATH)
     parser.add_argument("--scored-path", type=Path, default=SCORED_PATH)
     parser.add_argument("--report-path", type=Path, default=REPORT_PATH)
-    parser.add_argument("--count", type=int, default=96)
+    parser.add_argument("--count", type=positive_int, default=96)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--top-n", type=int, default=8)
-    parser.add_argument("--threshold", type=float, default=DEFAULT_REVIEW_THRESHOLD)
+    parser.add_argument("--top-n", type=nonnegative_int, default=8)
+    parser.add_argument(
+        "--threshold",
+        type=positive_finite_float,
+        default=DEFAULT_REVIEW_THRESHOLD,
+    )
     parser.add_argument(
         "--baseline-scope",
         choices=["combined", "mode"],
