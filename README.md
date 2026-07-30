@@ -3,6 +3,8 @@
 A small Python and Streamlit project for finding and reviewing unusual points in
 synthetic spacecraft telemetry.
 
+[Open the live review app](https://telemetry-anomaly-review.streamlit.app/).
+
 The data is generated for this repo. It is not flight data, employer data, or
 data from a real mission.
 
