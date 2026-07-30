@@ -76,7 +76,6 @@ A larger version would add mode-specific baselines, time-window features, calibr
 ## Known Limits
 
 - The telemetry is synthetic.
-- The baseline is global rather than mode-specific.
+- The baseline combines all operating modes.
 - The detector treats rows independently.
 - The report is small and text-based by design.
-
